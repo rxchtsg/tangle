@@ -1,38 +1,55 @@
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+import { PageIntro, Reveal } from '@/components/primitives'
+import { KindDot } from '@/components/home/thought-object'
 import { projects } from '@/lib/data'
-import { PageContainer, SectionLabel } from '@/components/primitives'
 
 export function ProjectsList() {
   return (
-    <PageContainer className="md:pt-20">
-      <header className="mb-10">
-        <h1 className="text-[30px] font-semibold tracking-[-0.03em] md:text-[36px]">Projects</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-          Contexts that grew out of things you captured.
-        </p>
-      </header>
-      <SectionLabel className="mb-2">Active</SectionLabel>
-      <ul className="flex flex-col">
-        {projects.map((project) => (
-          <li key={project.slug} className="border-t border-border first:border-t-0">
+    <div className="mx-auto flex w-full max-w-[52rem] flex-col gap-16">
+      <PageIntro
+        eyebrow="Projects"
+        title="Contexts, not folders."
+        lede="Tangle groups thoughts that belong together. Each of these grew out of something you wrote."
+      />
+
+      <ul className="flex flex-col gap-3">
+        {projects.map((p, i) => (
+          <Reveal as="li" key={p.slug} delay={i * 80}>
             <Link
-              href={project.slug === 'vercel-side-project' ? `/projects/${project.slug}` : '/projects'}
-              className="group -mx-3 flex flex-col gap-1 rounded-md px-3 py-5 transition-colors duration-150 hover:bg-accent/70 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+              href={`/projects/${p.slug}`}
+              className="group relative flex flex-col gap-4 rounded-[22px] p-6 transition-all duration-300 hover:bg-card/70 hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--foreground)_6%,transparent),0_20px_40px_-24px_color-mix(in_oklab,var(--foreground)_25%,transparent)] sm:p-7"
             >
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="text-[17px] font-medium tracking-[-0.015em]">{project.name}</span>
-                <span className="text-pretty text-[14px] leading-relaxed text-muted-foreground">{project.description}</span>
-              </span>
-              <span className="flex shrink-0 gap-3 font-mono text-[11px] text-muted-foreground">
-                <span>
-                  {project.counts.tasks} tasks · {project.counts.ideas} ideas
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-[clamp(1.6rem,3.4vw,2.25rem)] font-light leading-tight tracking-[-0.03em]">{p.name}</h2>
+                  <p className="max-w-[32rem] text-[15px] leading-relaxed text-muted-foreground">{p.line}</p>
+                </div>
+                <ArrowRight
+                  className="mt-3 size-5 shrink-0 -translate-x-1 text-foreground/40 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <KindDot kind="note" />
+                  {`${p.counts.thoughts} thoughts`}
                 </span>
-                <span>{project.updated}</span>
-              </span>
+                <span className="flex items-center gap-1.5">
+                  <KindDot kind="task" />
+                  {`${p.counts.tasks} tasks`}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <KindDot kind="reference" />
+                  {`${p.counts.references} references`}
+                </span>
+                <span className="ml-auto">{`Touched ${p.touched}`}</span>
+              </div>
             </Link>
-          </li>
+          </Reveal>
         ))}
       </ul>
-    </PageContainer>
+    </div>
   )
 }

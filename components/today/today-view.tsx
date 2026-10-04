@@ -1,210 +1,131 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { ideas, savedLinks } from '@/lib/data'
+import { CheckCircle, Eyebrow, PageIntro, Reveal } from '@/components/primitives'
+import { circling, looseEnds, revisit, todayFocus } from '@/lib/data'
+import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { Favicon, SectionLabel } from '@/components/primitives'
 
-const focusItems = [
-  {
-    id: 'f1',
-    title: 'Decide how onboarding should work',
-    context: 'Onboarding redesign',
-    why: 'Due Thursday. Two captures are waiting on this answer.',
-  },
-  {
-    id: 'f2',
-    title: 'Finish the interface',
-    context: 'Vercel side project',
-    why: 'Blocking deploy and the launch post.',
-  },
-  {
-    id: 'f3',
-    title: 'Ask Max about the API architecture',
-    context: 'Vercel side project',
-    why: 'Captured 2 hours ago. Max is online until 7pm.',
-  },
-]
+function Greeting() {
+  const h = new Date().getHours()
+  const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'
+  return <span suppressHydrationWarning>{`Good ${part}, Rachel.`}</span>
+}
 
-const looseEnds = [
-  { text: 'Reply to Priya about Friday’s design review', age: 'Open 3 days' },
-  { text: 'Cancel the unused Figma seat', age: 'Open 6 days' },
-  { text: 'Book dentist — mentioned twice', age: 'Open 2 weeks' },
-]
-
-function TodayDate() {
-  const label = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date())
-  return <span suppressHydrationWarning>{label}</span>
+function Section({
+  label,
+  note,
+  children,
+  delay = 0,
+}: {
+  label: string
+  note: string
+  children: React.ReactNode
+  delay?: number
+}) {
+  return (
+    <Reveal as="section" delay={delay} className="grid gap-5 md:grid-cols-[11rem_1fr] md:gap-10">
+      <div className="flex flex-col gap-1.5 md:pt-1.5">
+        <Eyebrow>{label}</Eyebrow>
+        <p className="text-[13px] leading-relaxed text-muted-foreground">{note}</p>
+      </div>
+      <div>{children}</div>
+    </Reveal>
+  )
 }
 
 export function TodayView() {
-  const [done, setDone] = useState<Set<string>>(() => new Set())
-
-  function toggle(id: string) {
-    setDone((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  const { done, toggleDone } = useStore()
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 pb-28 pt-10 md:px-10 md:pb-20 md:pt-20">
-      <header className="mb-12 border-b border-border pb-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-          <TodayDate />
-        </p>
-        <h1 className="mt-3 text-[34px] font-semibold leading-none tracking-[-0.035em] md:text-[44px]">Today</h1>
-        <p className="mt-3 text-pretty text-[15px] leading-relaxed text-muted-foreground">
-          Here&apos;s what deserves your attention.
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-[52rem] flex-col gap-20">
+      <PageIntro
+        eyebrow="Today"
+        title={<Greeting />}
+        lede="Here’s what your brain seems to care about today."
+      />
 
-      <div className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-0">
-        <div className="flex flex-col gap-14 lg:pr-12">
-          <section aria-labelledby="focus-heading">
-            <div className="mb-5 flex items-baseline justify-between">
-              <SectionLabel>
-                <span id="focus-heading">Focus</span>
-              </SectionLabel>
-              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-                {done.size} of {focusItems.length} done
-              </span>
-            </div>
-            <ol className="flex flex-col">
-              {focusItems.map((item, i) => {
-                const isDone = done.has(item.id)
-                return (
-                  <li
-                    key={item.id}
-                    className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both border-t border-border py-5 duration-500 first:border-t-0 first:pt-0"
-                    style={{ animationDelay: `${i * 90}ms` }}
-                  >
-                    <label className="group flex cursor-pointer items-start gap-4">
-                      <input
-                        type="checkbox"
-                        checked={isDone}
-                        onChange={() => toggle(item.id)}
-                        className="peer sr-only"
-                      />
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'mt-1.5 inline-flex size-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-200 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cobalt',
-                          isDone ? 'border-cobalt bg-cobalt' : 'border-border-strong group-hover:border-foreground/50',
-                        )}
-                      >
-                        <span className={cn('size-1.5 rounded-full bg-background transition-opacity', isDone ? 'opacity-100' : 'opacity-0')} />
-                      </span>
-                      <span className="flex min-w-0 flex-col gap-1">
-                        <span
-                          className={cn(
-                            'text-pretty text-[20px] font-medium leading-snug tracking-[-0.02em] transition-colors duration-200 md:text-[22px]',
-                            isDone ? 'text-muted-foreground line-through decoration-1' : 'text-foreground',
-                          )}
-                        >
-                          {item.title}
-                        </span>
-                        <span className="text-pretty text-[14px] leading-relaxed text-muted-foreground">
-                          {item.why}
-                        </span>
-                        <span className="text-[12px] text-muted-foreground">
-                          in{' '}
-                          <Link
-                            href={item.context === 'Vercel side project' ? '/projects/vercel-side-project' : '/projects'}
-                            className="text-foreground underline decoration-border-strong underline-offset-4 transition-colors hover:decoration-foreground"
-                          >
-                            {item.context}
-                          </Link>
-                        </span>
-                      </span>
-                    </label>
-                  </li>
-                )
-              })}
-            </ol>
-          </section>
-
-          <section aria-labelledby="loose-heading">
-            <SectionLabel className="mb-4">
-              <span id="loose-heading">Loose ends</span>
-            </SectionLabel>
-            <ul className="flex flex-col">
-              {looseEnds.map((item) => (
-                <li
-                  key={item.text}
-                  className="flex items-baseline justify-between gap-4 border-t border-border py-3 first:border-t-0"
-                >
-                  <span className="text-pretty text-[15px] leading-relaxed">{item.text}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{item.age}</span>
+      <div className="flex flex-col gap-16">
+        <Section label="Focus" note="The three things that deserve your attention.">
+          <ul className="flex flex-col gap-6">
+            {todayFocus.map((f) => {
+              const isDone = done.has(f.id)
+              return (
+                <li key={f.id} className="group flex items-start gap-4">
+                  <span className="pt-[7px]">
+                    <CheckCircle checked={isDone} onToggle={() => toggleDone(f.id)} label={f.title} />
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <p
+                      className={cn(
+                        'text-[clamp(1.35rem,2.6vw,1.75rem)] font-light leading-snug tracking-[-0.025em] transition-colors duration-300',
+                        isDone && 'text-muted-foreground line-through decoration-foreground/20 decoration-1',
+                      )}
+                    >
+                      {f.title}
+                    </p>
+                    <p className="text-[14px] leading-relaxed text-muted-foreground">{f.why}</p>
+                    <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      {f.project}
+                    </p>
+                  </div>
                 </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+              )
+            })}
+          </ul>
+        </Section>
 
-        <aside className="flex flex-col gap-14 lg:border-l lg:border-border lg:pl-12">
-          <section aria-labelledby="ideas-heading">
-            <div className="mb-4 flex items-baseline justify-between">
-              <SectionLabel>
-                <span id="ideas-heading">Ideas</span>
-              </SectionLabel>
-              <Link href="/ideas" className="text-[12px] text-muted-foreground transition-colors hover:text-foreground">
-                All ideas
-              </Link>
-            </div>
-            <ul className="flex flex-col gap-5">
-              {ideas.slice(0, 3).map((idea) => (
-                <li key={idea.title}>
-                  <p className="text-pretty text-[15px] font-medium leading-snug tracking-[-0.01em]">{idea.title}</p>
-                  <p className="mt-1 text-pretty text-[13.5px] leading-relaxed text-muted-foreground">{idea.body}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
+        <Section label="Loose ends" note="Things you mentioned but never closed." delay={60}>
+          <ul className="flex flex-col">
+            {looseEnds.map((l) => (
+              <li
+                key={l.text}
+                className="flex items-baseline justify-between gap-6 border-b border-foreground/[0.06] py-3.5 first:pt-0 last:border-0"
+              >
+                <p className="text-[16px] leading-relaxed">{l.text}</p>
+                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{l.time}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
 
-          <section aria-labelledby="saved-heading">
-            <div className="mb-4 flex items-baseline justify-between">
-              <SectionLabel>
-                <span id="saved-heading">Saved</span>
-              </SectionLabel>
-              <Link href="/saved" className="text-[12px] text-muted-foreground transition-colors hover:text-foreground">
-                All saved
-              </Link>
+        <Section label="Ideas" note="Things you’ve been circling." delay={60}>
+          <ul className="flex flex-col gap-5">
+            {circling.map((c) => (
+              <li key={c.title} className="flex flex-col gap-1.5">
+                <p className="text-[19px] font-normal tracking-[-0.015em]">{c.title}</p>
+                <p className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+                  <span className="flex gap-1" aria-hidden="true">
+                    {Array.from({ length: c.count }).map((_, i) => (
+                      <span key={i} className="size-[5px] rounded-full bg-foreground/30" />
+                    ))}
+                  </span>
+                  {`Came up ${c.count} times · ${c.since}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section label="Revisit" note="Something Tangle thinks matters again." delay={60}>
+          <a
+            href={`https://${revisit.domain}`}
+            target="_blank"
+            rel="noreferrer"
+            className="material-glass group flex flex-col gap-3 rounded-[20px] p-6 transition-transform duration-300 hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-mono text-[11px] text-muted-foreground">{`${revisit.domain} · saved ${revisit.saved}`}</span>
+              <ArrowUpRight
+                className="size-4 text-muted-foreground transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                strokeWidth={1.6}
+                aria-hidden="true"
+              />
             </div>
-            <ul className="flex flex-col">
-              {savedLinks.slice(0, 3).map((link) => (
-                <li key={link.domain} className="border-t border-border first:border-t-0">
-                  <a
-                    href={`https://${link.domain}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex items-start gap-3 py-3"
-                  >
-                    <Favicon domain={link.domain} className="mt-0.5" />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-[14px] font-medium group-hover:underline group-hover:decoration-border-strong group-hover:underline-offset-4">
-                        {link.title}
-                      </span>
-                      <span className="text-[12px] text-muted-foreground">{link.note}</span>
-                    </span>
-                    <ArrowUpRight
-                      className="mt-1 size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-hidden="true"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </aside>
+            <p className="text-[22px] font-light tracking-[-0.02em]">{revisit.title}</p>
+            <p className="max-w-[32rem] text-[15px] leading-relaxed text-muted-foreground">{revisit.reason}</p>
+          </a>
+        </Section>
       </div>
     </div>
   )

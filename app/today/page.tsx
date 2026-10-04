@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { TodayView } from '@/components/today/today-view'
 
-export const metadata: Metadata = { title: 'Today — Context' }
+export const metadata: Metadata = { title: 'Today — Tangle' }
 
-export default function TodayPage() {
+export default function Page() {
   return <TodayView />
 }

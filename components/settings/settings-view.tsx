@@ -1,88 +1,106 @@
 'use client'
 
 import { useState } from 'react'
+import { Eyebrow, Kbd, PageIntro, Reveal } from '@/components/primitives'
 import { cn } from '@/lib/utils'
-import { Kbd, PageContainer, SectionLabel } from '@/components/primitives'
 
-const preferences = [
-  { id: 'auto', label: 'Suggest where things belong', hint: 'Show a quiet hint on each capture.', initial: true },
-  { id: 'brief', label: 'Morning briefing', hint: 'Prepare Today at 8:00 each morning.', initial: true },
-  { id: 'links', label: 'Fetch link titles', hint: 'Read the page title when you paste a URL.', initial: false },
-]
+function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className={cn(
+        'relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-300',
+        on ? 'bg-foreground' : 'bg-foreground/15',
+      )}
+    >
+      <span
+        className={cn(
+          'absolute top-[3px] size-5 rounded-full bg-card shadow-[0_1px_3px_color-mix(in_oklab,var(--foreground)_30%,transparent)] transition-transform duration-300 ease-[var(--ease-spring)]',
+          on ? 'translate-x-[21px]' : 'translate-x-[3px]',
+        )}
+      />
+    </button>
+  )
+}
 
-const shortcuts: [string, string[]][] = [
+function Row({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-6 border-b border-foreground/[0.06] py-5 last:border-0">
+      <div className="flex flex-col gap-0.5">
+        <p className="text-[15.5px]">{title}</p>
+        <p className="text-[13px] text-muted-foreground">{note}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const SHORTCUTS: [string, string[]][] = [
   ['Search everything', ['⌘', 'K']],
-  ['Capture', ['⌘', '↵']],
-  ['Go to Inbox … Saved', ['1', '–', '5']],
-  ['Quick search', ['/']],
+  ['Add a thought', ['⌘', '↵']],
+  ['Close anything', ['Esc']],
 ]
 
 export function SettingsView() {
-  const [values, setValues] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(preferences.map((p) => [p.id, p.initial])),
-  )
+  const [motion, setMotion] = useState(true)
+  const [quietHours, setQuietHours] = useState(true)
+
+  const replay = () => {
+    try {
+      localStorage.removeItem('tangle.welcomed')
+    } catch {}
+    window.location.href = '/'
+  }
 
   return (
-    <PageContainer className="md:pt-20">
-      <header className="mb-10">
-        <h1 className="text-[30px] font-semibold tracking-[-0.03em] md:text-[36px]">Settings</h1>
-      </header>
+    <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-14">
+      <PageIntro eyebrow="Settings" title="Make it yours." />
 
-      <section aria-labelledby="prefs-heading" className="mb-12">
-        <SectionLabel className="mb-2">
-          <span id="prefs-heading">Preferences</span>
-        </SectionLabel>
-        <ul className="flex flex-col">
-          {preferences.map((pref) => {
-            const on = values[pref.id]
-            return (
-              <li key={pref.id} className="flex items-center justify-between gap-6 border-t border-border py-4 first:border-t-0">
-                <span className="flex flex-col">
-                  <span id={`pref-${pref.id}`} className="text-[15px] font-medium">
-                    {pref.label}
-                  </span>
-                  <span className="text-[13px] text-muted-foreground">{pref.hint}</span>
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={on}
-                  aria-labelledby={`pref-${pref.id}`}
-                  onClick={() => setValues((v) => ({ ...v, [pref.id]: !v[pref.id] }))}
-                  className={cn(
-                    'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors duration-200',
-                    on ? 'border-cobalt bg-cobalt' : 'border-border-strong bg-muted',
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'inline-block size-3.5 rounded-full bg-card shadow-sm transition-transform duration-200',
-                      on ? 'translate-x-[17px]' : 'translate-x-[2px]',
-                    )}
-                  />
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </section>
+      <Reveal as="section" className="flex flex-col">
+        <Eyebrow className="pb-1">Atmosphere</Eyebrow>
+        <Row title="Ambient motion" note="Let the light in the background drift slowly.">
+          <Toggle
+            on={motion}
+            label="Ambient motion"
+            onChange={(v) => {
+              setMotion(v)
+              document.documentElement.toggleAttribute('data-calm', !v)
+            }}
+          />
+        </Row>
+        <Row title="Quiet evenings" note="After 9pm, Today stops suggesting things to do.">
+          <Toggle on={quietHours} label="Quiet evenings" onChange={setQuietHours} />
+        </Row>
+        <Row title="Welcome" note="See the first-launch sequence again.">
+          <button
+            type="button"
+            onClick={replay}
+            className="h-9 shrink-0 rounded-[10px] px-3.5 text-[13px] text-foreground shadow-[0_0_0_1px_color-mix(in_oklab,var(--foreground)_12%,transparent)] transition-colors hover:bg-card"
+          >
+            Replay
+          </button>
+        </Row>
+      </Reveal>
 
-      <section aria-labelledby="keys-heading">
-        <SectionLabel className="mb-2">
-          <span id="keys-heading">Keyboard</span>
-        </SectionLabel>
+      <Reveal as="section" delay={80} className="flex flex-col">
+        <Eyebrow className="pb-3">Keyboard</Eyebrow>
         <ul className="flex flex-col">
-          {shortcuts.map(([label, keys]) => (
-            <li key={label} className="flex items-center justify-between border-t border-border py-3 text-[14px] first:border-t-0">
-              {label}
-              <span className="flex items-center gap-1">
-                {keys.map((k, i) => (k === '–' ? <span key={i} className="text-muted-foreground">–</span> : <Kbd key={i}>{k}</Kbd>))}
+          {SHORTCUTS.map(([label, keys]) => (
+            <li key={label} className="flex items-center justify-between border-b border-foreground/[0.06] py-3.5 last:border-0">
+              <span className="text-[15px]">{label}</span>
+              <span className="flex gap-1">
+                {keys.map((k) => (
+                  <Kbd key={k}>{k}</Kbd>
+                ))}
               </span>
             </li>
           ))}
         </ul>
-      </section>
-    </PageContainer>
+      </Reveal>
+    </div>
   )
 }

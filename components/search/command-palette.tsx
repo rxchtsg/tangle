@@ -1,280 +1,159 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog } from '@base-ui/react/dialog'
-import { ArrowRight, CornerDownLeft, Search, type LucideIcon } from 'lucide-react'
-import { CircleCheck, FileText, Layers, Link2, User } from 'lucide-react'
-import { people, projects, savedLinks } from '@/lib/data'
+import { CornerDownLeft, Search } from 'lucide-react'
+import { Kbd } from '@/components/primitives'
+import { ideas, kindLabel, olderThoughts, people, projects } from '@/lib/data'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { Kbd } from '@/components/primitives'
 
-type Result = {
-  id: string
-  group: 'Thoughts' | 'Tasks' | 'Projects' | 'Links' | 'People'
-  title: string
-  meta?: string
-  href: string
-}
+type Result = { id: string; group: string; title: string; meta?: string; href: string }
 
-const groupOrder: Result['group'][] = ['Thoughts', 'Tasks', 'Projects', 'Links', 'People']
-const groupIcons: Record<Result['group'], LucideIcon> = {
-  Thoughts: FileText,
-  Tasks: CircleCheck,
-  Projects: Layers,
-  Links: Link2,
-  People: User,
-}
+const GROUPS = ['Thoughts', 'Projects', 'Ideas', 'People']
 
 export function CommandPalette() {
   const router = useRouter()
-  const { searchOpen, setSearchOpen, items, tasks } = useStore()
+  const { searchOpen, setSearchOpen, thoughts } = useStore()
   const [query, setQuery] = useState('')
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [answer, setAnswer] = useState<{ state: 'thinking' | 'done'; text: string; q: string } | null>(null)
-  const listRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const index = useMemo<Result[]>(() => {
-    const thoughts = items
-      .filter((item) => item.kind !== 'link')
-      .map((item) => ({
-        id: item.id,
-        group: 'Thoughts' as const,
-        title: item.content,
-        meta: item.project ?? item.time,
-        href: '/',
-      }))
-    const taskResults = tasks.map((task) => ({
-      id: task.id,
-      group: 'Tasks' as const,
-      title: task.title,
-      meta: task.done ? 'Done' : 'Vercel side project',
-      href: '/projects/vercel-side-project',
-    }))
-    const projectResults = projects.map((project) => ({
-      id: project.slug,
-      group: 'Projects' as const,
-      title: project.name,
-      meta: `${project.counts.tasks} tasks`,
-      href: project.slug === 'vercel-side-project' ? `/projects/${project.slug}` : '/projects',
-    }))
-    const linkResults = savedLinks.map((link) => ({
-      id: link.domain,
-      group: 'Links' as const,
-      title: link.title,
-      meta: link.domain,
-      href: '/saved',
-    }))
-    const peopleResults = people.map((person) => ({
-      id: person.name,
-      group: 'People' as const,
-      title: person.name,
-      meta: person.role,
-      href: '/projects/vercel-side-project',
-    }))
-    return [...thoughts, ...taskResults, ...projectResults, ...linkResults, ...peopleResults]
-  }, [items, tasks])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(!searchOpen)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [searchOpen, setSearchOpen])
 
-  const grouped = useMemo(() => {
+  useEffect(() => {
+    if (!searchOpen) return
+    setQuery('')
+    setActive(0)
+    const id = requestAnimationFrame(() => inputRef.current?.focus())
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      cancelAnimationFrame(id)
+      document.body.style.overflow = prev
+    }
+  }, [searchOpen])
+
+  const index = useMemo<Result[]>(
+    () => [
+      ...[...thoughts, ...olderThoughts].map((t) => ({
+        id: t.id,
+        group: 'Thoughts',
+        title: t.content,
+        meta: kindLabel[t.kind],
+        href: '/inbox',
+      })),
+      ...projects.map((p) => ({ id: p.slug, group: 'Projects', title: p.name, meta: p.line, href: `/projects/${p.slug}` })),
+      ...ideas.map((i) => ({ id: i.title, group: 'Ideas', title: i.title, meta: `Circled ${i.circled}×`, href: '/ideas' })),
+      ...people.map((p) => ({ id: p.name, group: 'People', title: p.name, meta: p.note, href: '/inbox' })),
+    ],
+    [thoughts],
+  )
+
+  const results = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const matches = q
-      ? index.filter((r) => `${r.title} ${r.meta ?? ''}`.toLowerCase().includes(q))
-      : index
-    return groupOrder
-      .map((group) => ({
-        group,
-        results: matches.filter((r) => r.group === group).slice(0, q ? 5 : 3),
-      }))
-      .filter((g) => g.results.length > 0)
+    const list = q
+      ? index.filter((r) => r.title.toLowerCase().includes(q) || r.meta?.toLowerCase().includes(q))
+      : index.filter((r) => r.group !== 'Thoughts').concat(index.filter((r) => r.group === 'Thoughts').slice(0, 4))
+    return GROUPS.flatMap((g) => list.filter((r) => r.group === g)).slice(0, 12)
   }, [index, query])
 
-  const flat = useMemo(() => grouped.flatMap((g) => g.results), [grouped])
-  const askIndex = flat.length
-  const clampedIndex = Math.min(activeIndex, askIndex)
+  if (!searchOpen) return null
 
-  function close() {
+  const go = (r?: Result) => {
+    if (!r) return
     setSearchOpen(false)
+    router.push(r.href)
   }
-
-  function handleOpenChange(open: boolean) {
-    setSearchOpen(open)
-    if (!open) {
-      setQuery('')
-      setActiveIndex(0)
-      setAnswer(null)
-    }
-  }
-
-  function ask() {
-    const q = query.trim() || 'What should I focus on?'
-    setAnswer({ state: 'thinking', text: '', q })
-    const related = index.filter((r) =>
-      q
-        .toLowerCase()
-        .split(/\s+/)
-        .some((word) => word.length > 3 && r.title.toLowerCase().includes(word)),
-    )
-    window.setTimeout(() => {
-      const text = related.length
-        ? `You’ve captured ${related.length} thing${related.length === 1 ? '' : 's'} related to this. The most recent is “${related[0].title}”${related[0].meta ? ` (${related[0].meta})` : ''}. ${related.length > 1 ? `It connects to “${related[1].title}”.` : ''}`
-        : 'Your onboarding question is due Thursday and has two captures behind it. After that, the Vercel side project has four open tasks — “Finish interface” is the one blocking the rest.'
-      setAnswer({ state: 'done', text, q })
-    }, 900)
-  }
-
-  function select(i: number) {
-    if (i === askIndex) {
-      ask()
-      return
-    }
-    const result = flat[i]
-    if (!result) return
-    router.push(result.href)
-    close()
-  }
-
-  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.nativeEvent.isComposing || event.keyCode === 229) return
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      setActiveIndex((i) => (Math.min(i, askIndex) + 1) % (askIndex + 1))
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      setActiveIndex((i) => (Math.min(i, askIndex) - 1 + askIndex + 1) % (askIndex + 1))
-    } else if (event.key === 'Enter') {
-      event.preventDefault()
-      select(event.metaKey || event.ctrlKey ? askIndex : clampedIndex)
-    }
-  }
-
-  let runningIndex = -1
 
   return (
-    <Dialog.Root open={searchOpen} onOpenChange={handleOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-foreground/10 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-        <Dialog.Popup className="fixed left-1/2 top-[12vh] z-50 flex max-h-[70vh] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border-strong bg-popover shadow-[0_24px_48px_-24px_oklch(0.2_0.006_70/0.25)] outline-none transition-[opacity,transform] duration-200 data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0">
-          <Dialog.Title className="sr-only">Search Context</Dialog.Title>
-          <div className="flex items-center gap-3 border-b border-border px-4">
-            <Search className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setActiveIndex(0)
-                setAnswer(null)
-              }}
-              onKeyDown={onKeyDown}
-              placeholder="Search thoughts, tasks, projects, links, people…"
-              aria-label="Search everything"
-              role="combobox"
-              aria-expanded="true"
-              aria-controls="palette-results"
-              aria-activedescendant={`palette-option-${clampedIndex}`}
-              className="h-12 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:outline-none"
-            />
-            <Kbd>esc</Kbd>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[14vh]">
+      <button
+        type="button"
+        aria-label="Close search"
+        onClick={() => setSearchOpen(false)}
+        className="pop-in absolute inset-0 bg-background/40 backdrop-blur-[6px]"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        className="material-glass-strong pop-in relative flex w-full max-w-[36rem] flex-col overflow-hidden rounded-[22px]"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setSearchOpen(false)
+          else if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setActive((a) => Math.min(results.length - 1, a + 1))
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setActive((a) => Math.max(0, a - 1))
+          } else if (e.key === 'Enter') {
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return
+            e.preventDefault()
+            go(results[active])
+          }
+        }}
+      >
+        <div className="flex items-center gap-3 border-b border-foreground/[0.06] px-5">
+          <Search className="size-4 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActive(0)
+            }}
+            placeholder="Search your tangle…"
+            aria-label="Search your tangle"
+            className="h-14 flex-1 bg-transparent text-[16px] outline-none placeholder:text-foreground/35 focus-visible:outline-none"
+          />
+          <Kbd>Esc</Kbd>
+        </div>
 
-          <div ref={listRef} id="palette-results" role="listbox" className="flex-1 overflow-y-auto p-2">
-            {answer ? (
-              <div className="px-3 py-3" aria-live="polite">
-                <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                  Context · {answer.q}
-                </p>
-                {answer.state === 'thinking' ? (
-                  <div className="flex flex-col gap-2" aria-label="Thinking">
-                    <span className="h-3 w-4/5 animate-pulse rounded-sm bg-muted" />
-                    <span className="h-3 w-3/5 animate-pulse rounded-sm bg-muted" />
-                  </div>
-                ) : (
-                  <p className="animate-in fade-in text-pretty text-[14px] leading-relaxed text-foreground duration-300">
-                    {answer.text}
-                  </p>
-                )}
+        <div className="max-h-[52vh] overflow-y-auto p-2" role="listbox" aria-label="Results">
+          {results.length === 0 ? (
+            <p className="px-3 py-10 text-center text-[14px] text-muted-foreground">
+              Nothing tangled up with that yet.
+            </p>
+          ) : (
+            results.map((r, i) => (
+              <div key={`${r.group}-${r.id}`}>
+                {i === 0 || results[i - 1].group !== r.group ? (
+                  <p className="eyebrow px-3 pb-1.5 pt-3 text-[9.5px]">{r.group}</p>
+                ) : null}
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={i === active}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => go(r)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-colors duration-150',
+                    i === active ? 'bg-accent/70' : 'hover:bg-foreground/[0.03]',
+                  )}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14.5px]">{r.title}</span>
+                    {r.meta ? <span className="block truncate text-[12.5px] text-muted-foreground">{r.meta}</span> : null}
+                  </span>
+                  {i === active ? (
+                    <CornerDownLeft className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.6} aria-hidden="true" />
+                  ) : null}
+                </button>
               </div>
-            ) : grouped.length === 0 ? (
-              <p className="px-3 py-6 text-center text-[13px] text-muted-foreground">
-                Nothing matches “{query}”. Try asking Context instead.
-              </p>
-            ) : (
-              grouped.map(({ group, results }) => {
-                const Icon = groupIcons[group]
-                return (
-                  <div key={group} className="pb-1" role="group" aria-label={group}>
-                    <p className="px-3 pb-1 pt-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-                      {group}
-                    </p>
-                    {results.map((result) => {
-                      runningIndex += 1
-                      const i = runningIndex
-                      const active = i === clampedIndex
-                      return (
-                        <div
-                          key={`${result.group}-${result.id}`}
-                          id={`palette-option-${i}`}
-                          role="option"
-                          aria-selected={active}
-                          onMouseMove={() => setActiveIndex(i)}
-                          onClick={() => select(i)}
-                          className={cn(
-                            'flex h-9 cursor-pointer items-center gap-3 rounded-md px-3 text-[13.5px] transition-colors duration-100',
-                            active ? 'bg-accent text-foreground' : 'text-foreground/85',
-                          )}
-                        >
-                          <Icon className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
-                          <span className="min-w-0 flex-1 truncate">{result.title}</span>
-                          {result.meta ? (
-                            <span className="hidden shrink-0 truncate text-[12px] text-muted-foreground sm:inline">
-                              {result.meta}
-                            </span>
-                          ) : null}
-                          <ArrowRight
-                            className={cn('size-3.5 shrink-0 text-muted-foreground transition-opacity', active ? 'opacity-100' : 'opacity-0')}
-                            aria-hidden="true"
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-          <div
-            id={`palette-option-${askIndex}`}
-            role="option"
-            aria-selected={clampedIndex === askIndex}
-            onMouseMove={() => setActiveIndex(askIndex)}
-            onClick={() => select(askIndex)}
-            className={cn(
-              'flex h-11 cursor-pointer items-center gap-3 border-t border-border px-5 text-[13px] transition-colors duration-100',
-              clampedIndex === askIndex ? 'bg-cobalt-soft' : 'bg-transparent',
-            )}
-          >
-            <span aria-hidden="true" className="relative inline-flex size-3.5 items-center justify-center">
-              <span className="absolute inset-0 rounded-[3px] border-[1.5px] border-cobalt" />
-              <span className="size-1 rounded-[1px] bg-cobalt" />
-            </span>
-            <span className="min-w-0 flex-1 truncate">
-              <span className="font-medium text-cobalt">Ask Context</span>
-              <span className="text-muted-foreground">
-                {query.trim() ? ` — “${query.trim()}”` : ' — a question about anything you’ve captured'}
-              </span>
-            </span>
-            <span className="flex items-center gap-0.5">
-              <Kbd>⌘</Kbd>
-              <Kbd>
-                <CornerDownLeft className="size-3" aria-hidden="true" />
-                <span className="sr-only">Enter</span>
-              </Kbd>
-            </span>
-          </div>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

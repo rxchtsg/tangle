@@ -1,34 +1,29 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist_Mono, Instrument_Sans } from 'next/font/google'
+import Script from 'next/script'
 import { StoreProvider } from '@/lib/store'
 import { AppShell } from '@/components/shell/app-shell'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
+const instrument = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument' })
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
-  title: 'Context — a quiet place for everything on your mind',
+  title: 'Tangle — Let your thoughts get tangled.',
   description:
-    'Context is a personal thinking layer. Drop thoughts, links, reminders and fragments — Context quietly turns them into structure.',
+    'Tangle is a personal thinking space for associative, idea-heavy minds. Drop anything in — Tangle finds the thread later.',
   generator: 'v0.app',
-  icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
-  },
 }
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#faf9f6',
+  themeColor: '#f4f3ef',
   width: 'device-width',
   initialScale: 1,
 }
+
+const welcomedScript = `try{if(localStorage.getItem('tangle.welcomed'))document.documentElement.setAttribute('data-welcomed','')}catch(e){document.documentElement.setAttribute('data-welcomed','')}`
 
 export default function RootLayout({
   children,
@@ -36,8 +31,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} bg-background`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${instrument.variable} ${geistMono.variable} bg-background`}
+    >
       <body className="antialiased">
+        <Script id="tangle-welcomed" strategy="beforeInteractive">
+          {welcomedScript}
+        </Script>
         <StoreProvider>
           <AppShell>{children}</AppShell>
         </StoreProvider>

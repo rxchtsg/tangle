@@ -1,11 +1,21 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ProjectView } from '@/components/project/project-view'
+import { projects } from '@/lib/data'
 
-export const metadata: Metadata = { title: 'Vercel side project — Context' }
+export function generateStaticParams() {
+  return projects.map((p) => ({ slug: p.slug }))
+}
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  if (slug !== 'vercel-side-project') notFound()
-  return <ProjectView />
+  const project = projects.find((p) => p.slug === slug)
+  return { title: project ? `${project.name} — Tangle` : 'Tangle' }
+}
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const project = projects.find((p) => p.slug === slug)
+  if (!project) notFound()
+  return <ProjectView project={project} />
 }
