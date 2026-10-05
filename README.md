@@ -1,33 +1,158 @@
-# tangle
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+# Tangle
 
-## Built with v0
+> **Let your thoughts get tangled.**
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+Tangle is an AI-native second brain designed for nonlinear thinkers.
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_3K3uMKoaEZoJvAkIxjoXoLEsyimr)
+Instead of forcing every thought into a folder, task list, or perfectly organized note, Tangle gives you a place to dump whatever is on your mind — ideas, questions, tasks, references, reminders, and half-formed thoughts.
 
-## Getting Started
+Tangle's job is to make sense of the mess later: finding patterns, connecting related thoughts, and surfacing the threads you might have forgotten.
 
-First, run the development server:
+## Why Tangle?
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+Most productivity tools ask you to organize your thoughts before you capture them.
+
+But real thinking isn't linear.
+
+You might start with a question, jump to an idea, save a link, remember something you need to do, and suddenly have five disconnected thoughts that are actually related.
+
+Tangle is built around the opposite philosophy:
+
+**Capture first. Make sense of it later.**
+
+---
+
+## ✦ What it does
+
+- **Capture anything** — thoughts, ideas, questions, tasks, references, and more
+- **Automatic classification** — understand what kind of thought you've captured
+- **Persistent memory** — thoughts remain available across sessions
+- **Personal thought space** — visualize and explore your growing collection of ideas
+- **Thread discovery** — connect related thoughts and uncover emerging themes
+- **AI organization** — turn an unstructured stream of thoughts into meaningful groups
+- **Projects & contexts** — let related thoughts naturally form larger areas of focus
+
+> Tangle is currently under active development. Some of these capabilities are part of the roadmap.
+
+---
+
+## ✦ Product
+
+Tangle is intentionally designed to feel more like a **personal thinking environment** than a traditional productivity dashboard.
+
+The interface uses spatial relationships, subtle motion, translucent materials, and ambient visual effects to represent the way ideas move and connect.
+
+The goal is simple:
+
+**Less organizing. More thinking.**
+
+---
+
+## ✦ Tech Stack
+
+### Frontend
+
+- **Next.js** — App Router
+- **React**
+- **TypeScript**
+- **Tailwind CSS**
+- **shadcn/ui**
+
+### Backend
+
+- **Supabase**
+  - PostgreSQL
+  - Authentication
+  - Row Level Security
+- **Next.js Route Handlers**
+
+### AI
+
+AI capabilities are being introduced incrementally, beginning with thought classification and eventually expanding into organization, relationships, and semantic discovery.
+
+---
+
+## ✦ Architecture
+
+At a high level:
+
+```text
+                         TANGLE
+
+                    ┌─────────────┐
+                    │    User     │
+                    └──────┬──────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │  Tangle UI  │
+                    │   Next.js   │
+                    └──────┬──────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │  API / Server   │
+                  │ Route Handlers  │
+                  └────────┬────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │    Supabase     │
+                  │                 │
+                  │  Auth           │
+                  │  PostgreSQL     │
+                  │  Row-Level      │
+                  │  Security       │
+                  └─────────────────┘
+
+The application uses Supabase authentication and PostgreSQL persistence, with Row Level Security ensuring that users can only access their own thoughts.
+✦ Development
+Clone the repository:
+git clone https://github.com/rxchtsg/tangle.git
+cd tangle
+
+Install dependencies:
+pnpm install
+
+Create a .env.local file:
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+
+Start the development server:
 pnpm dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Learn More
-
-To learn more, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+Open http://localhost:3000.
+✦ Project Status
+Tangle is an evolving portfolio project and a playground for exploring:
+- AI-native product design
+- Human-computer interaction
+- Generative interfaces
+- Personal knowledge systems
+- AI-assisted organization
+- Modern full-stack development
+The current version focuses on the core capture, authentication, persistence, and thought-management infrastructure.
+The next layer is making Tangle genuinely intelligent.
+✦ Roadmap
+Now
+- [x] Thought capture
+- [x] Thought classification foundation
+- [x] Supabase authentication
+- [x] Persistent thought storage
+- [x] Row Level Security
+- [x] Pinning
+- [ ] AI-powered classification
+Next
+- [ ] AI thought organization
+- [ ] Thread discovery
+- [ ] Related thought connections
+- [ ] Semantic search
+- [ ] Projects and contexts
+- [ ] Daily resurfacing / "Today"
+- [ ] Smarter personal insights
+Eventually
+- [ ] Embeddings and semantic memory
+- [ ] Cross-thought reasoning
+- [ ] Automatic project formation
+- [ ] Richer multimodal capture
+- [ ] Voice input
