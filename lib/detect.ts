@@ -25,14 +25,12 @@ export function detectKind(text: string): ThoughtKind {
   return 'note'
 }
 
-let counter = 0
-
 export function createThought(text: string): Thought {
   const content = text.trim()
   const kind = detectKind(content)
   const url = content.match(URL_IN_TEXT_RE)?.[0]
   return {
-    id: `n-${Date.now()}-${counter++}`,
+    id: crypto.randomUUID(),
     kind,
     content,
     time: 'Just now',

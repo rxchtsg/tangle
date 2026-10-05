@@ -1,12 +1,26 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { CommandPalette } from '@/components/search/command-palette'
 import { Environment } from './environment'
 import { FloatingNav, MobileTop } from './floating-nav'
 import { MobileDock } from './mobile-dock'
 import { Welcome } from './welcome'
 
+const AUTH_PATHS = new Set(['/login', '/signup'])
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
+  if (AUTH_PATHS.has(pathname)) {
+    return (
+      <>
+        <Environment />
+        <main className="relative min-h-dvh">{children}</main>
+      </>
+    )
+  }
+
   return (
     <>
       <Environment />
